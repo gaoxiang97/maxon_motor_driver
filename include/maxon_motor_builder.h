@@ -4,16 +4,16 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define ANALOG_OUT_MAX_VOLT 10.0F
-
-#define PWM_MIN_DUTY_CYLCE 0.1F
-#define PWM_MAX_DUTY_CYCLE 0.9F
-
-#define MAX_CURRENT_CMD	15.0F
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
+	#define ANALOG_OUT_MAX_VOLT 10.0F
+
+	#define PWM_MIN_DUTY_CYLCE 0.1F
+	#define PWM_MAX_DUTY_CYCLE 0.9F
+
+	#define MAX_CURRENT_CMD	15.0F
+
 	// ADT define
 	typedef struct MaxonMotorBuilder* MaxonMotorBuilderPtr;
 
