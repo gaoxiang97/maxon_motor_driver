@@ -10,10 +10,11 @@ typedef struct MaxonMotor {
 	const Enable m_enable;
 	const CmdSetter m_setOffset;
 	const OutputGetter m_analogOutput[2];
+
+	uint16_t m_analogOutputBuffer[2];
 } MaxonMotor;
 
-MaxonMotorBuilderStatus maxonMotorBuilderDestroy(MaxonMotorBuilderPtr * t_maxon_builder)
-{
+MaxonMotorBuilderStatus maxonMotorBuilderDestroy(MaxonMotorBuilderPtr * t_maxon_builder) {
 	if (t_maxon_builder == NULL) {
 		return MaxonMotorStatusOK;
 	}
@@ -27,8 +28,7 @@ MaxonMotorBuilderStatus maxonMotorBuilderDestroy(MaxonMotorBuilderPtr * t_maxon_
 }
 
 // MaxonMotor interface
-MaxonMotorPtr maxonMotorCreate(MaxonMotorBuilderPtr t_maxon_builder)
-{
+MaxonMotorPtr maxonMotorCreate(MaxonMotorBuilderPtr t_maxon_builder) {
 	bool opt_set_list[BuilderOptTotalOptNum];
 	maxonMotorBuilderGetListOfSet(t_maxon_builder, opt_set_list);
 
@@ -44,6 +44,14 @@ MaxonMotorPtr maxonMotorCreate(MaxonMotorBuilderPtr t_maxon_builder)
 		maxonMotorBuilderCopySetup(t_maxon_builder, BuilderOptEnable, (void*) &ptr->m_enable);
 		maxonMotorBuilderCopySetup(t_maxon_builder, BuilderOptSetOffset, (void*) &ptr->m_setOffset);
 
+		if (opt_set_list[BuilderOptGetOutput1]) {
+			maxonMotorBuilderCopySetup(t_maxon_builder, BuilderOptGetOutput1, (void*) &ptr->m_analogOutput[0]);
+		}
+
+		if (opt_set_list[BuilderOptGetOutput2]) {
+			maxonMotorBuilderCopySetup(t_maxon_builder, BuilderOptGetOutput2, (void*) &ptr->m_analogOutput[1]);
+		}
+
 		// Since maxon motor controller doesn't reset when power on 
 		// (this is observed through controller monitor on ESCON),
 		// do the reset manually so that it reset itself
@@ -53,11 +61,10 @@ MaxonMotorPtr maxonMotorCreate(MaxonMotorBuilderPtr t_maxon_builder)
 	return ptr;
 }
 
-MaxonMotorStatus maxonMotorCurrentCmd(MaxonMotorPtr t_maxon, float t_current_cmd)
-{	
+MaxonMotorStatus maxonMotorCurrentCmd(MaxonMotorPtr t_maxon, float t_current_cmd) {
 	if (t_maxon->m_setValue.setCmdFunc) {
 		float duty_cylce = t_maxon->m_setValue.slope * t_current_cmd + t_maxon->m_setValue.offset;
-		uint32_t compared_val = (uint32_t)(duty_cylce * t_maxon->m_setValue.autoReloadVal);
+		uint32_t compared_val = (uint32_t) (duty_cylce * t_maxon->m_setValue.autoReloadVal);
 
 		t_maxon->m_setValue.setCmdFunc(t_maxon->m_setValue.addr, compared_val);
 	}
@@ -65,25 +72,27 @@ MaxonMotorStatus maxonMotorCurrentCmd(MaxonMotorPtr t_maxon, float t_current_cmd
 	return MaxonMotorStatusOK;
 }
 
-MaxonMotorStatus maxonMotorSetOffset(MaxonMotorPtr t_maxon, float t_offset_cmd)
-{	
+MaxonMotorStatus maxonMotorSetOffset(MaxonMotorPtr t_maxon, float t_offset_cmd) {
 	if (t_maxon->m_setOffset.setCmdFunc) {
 		float duty_cylce = t_maxon->m_setOffset.slope * t_offset_cmd + t_maxon->m_setOffset.offset;
-		uint32_t compared_val = (uint32_t)(duty_cylce * t_maxon->m_setOffset.autoReloadVal);
+		uint32_t compared_val = (uint32_t) (duty_cylce * t_maxon->m_setOffset.autoReloadVal);
 
 		t_maxon->m_setOffset.setCmdFunc(t_maxon->m_setOffset.addr, compared_val);
 	}
-	
+
 	return MaxonMotorStatusOK;
 }
 
-float maxonMotorGetCurrentAvg(MaxonMotorPtr t_maxon)
-{
-	OutputGetter* analog_out_ptr = 0;
+float maxonMotorGetCurrentAvg(MaxonMotorPtr t_maxon) {
+	const OutputGetter* analog_out_ptr = 0;
 
-	if (t_maxon->m_analogOutput[0].opt == GetOptionCurrentAvg) analog_out_ptr = t_maxon->m_analogOutput[0];
-	else if (t_maxon->m_analogOutput[1].opt == GetOptionCurrentAvg) analog_out_ptr = t_maxon->m_analogOutput[1];
-	else return 0.0F;
+	if (t_maxon->m_analogOutput[0].opt == GetOptionCurrentAvg) {
+		analog_out_ptr = &t_maxon->m_analogOutput[0];
+	} else if (t_maxon->m_analogOutput[1].opt == GetOptionCurrentAvg) {
+		analog_out_ptr = &t_maxon->m_analogOutput[1];
+	} else {
+		assert(false);
+	}
 
 	void* adc = analog_out_ptr->addr;
 
@@ -93,9 +102,8 @@ float maxonMotorGetCurrentAvg(MaxonMotorPtr t_maxon)
 	return current_avg;
 }
 
-MaxonMotorStatus maxonMotorReset(MaxonMotorPtr t_maxon)
-{
-	MaxonMotorGpio* enable_gpio = &t_maxon->m_enable.enableGpio;
+MaxonMotorStatus maxonMotorReset(MaxonMotorPtr t_maxon) {
+	const MaxonMotorGpio* enable_gpio = &t_maxon->m_enable.enableGpio;
 	t_maxon->m_enable.disable(enable_gpio->port, enable_gpio->pin);
 
 	for (int i = 0; i < 10000000; ++i) {
@@ -107,8 +115,7 @@ MaxonMotorStatus maxonMotorReset(MaxonMotorPtr t_maxon)
 	return MaxonMotorStatusOK;
 }
 
-MaxonMotorStatus maxonMotorDestroy(MaxonMotorPtr * t_maxon)
-{
+MaxonMotorStatus maxonMotorDestroy(MaxonMotorPtr * t_maxon) {
 	if (t_maxon == NULL) {
 		return MaxonMotorStatusOK;
 	}

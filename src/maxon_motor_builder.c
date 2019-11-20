@@ -71,6 +71,7 @@ static inline MaxonMotorBuilderStatus m_maxonMotorBuilderSetValue(MaxonMotorBuil
 		if (t_builder->maxonMotorOptIsSet[BuilderOptSetOffset]) {
 			assert(t_builder->maxonMotorOptList[BuilderOptSetOffset] != SetOptionAnalog);
 		}
+		break;
 	}
 	default:
 		// this should not be reached
@@ -116,13 +117,14 @@ static inline MaxonMotorBuilderStatus m_maxonMotorBuilderAnalogOutput(MaxonMotor
 
 	switch(data->opt) {
 	case GetOptionCurrentAvg:
+		analog_output_ptr->opt = data->opt;
 		analog_output_ptr->addr = data->addr;
 		analog_output_ptr->getOuputFun = data->getOutputFunc;
 		analog_output_ptr->offset = (float)data->min.val;
 		analog_output_ptr->slope = data->resolution * (data->max.val - data->min.val) / (float)(data->max.key - data->min.key);
 		break;
 	default:
-		break;
+		assert(false);
 	}
 
 	return MaxonMotorBuilderStatusOK;
@@ -169,7 +171,7 @@ MaxonMotorBuilderStatus maxonMotorBuilderSetOption(MaxonMotorBuilderPtr t_builde
 	assert(t_builder != NULL);
 	assert(t_data != NULL);
 
-	// if I would want this to work, than literally all opt
+	// if I would want this to work, then literally all opt
 	// enum must be the first member of corresponding init struct
 	t_builder->maxonMotorOptList[t_opt] = *(int*)(t_data);
 	t_builder->maxonMotorOptIsSet[t_opt] = true;
