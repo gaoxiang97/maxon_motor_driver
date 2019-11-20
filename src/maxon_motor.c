@@ -9,9 +9,10 @@ typedef struct MaxonMotor {
 	const CmdSetter m_setValue;
 	const Enable m_enable;
 	const CmdSetter m_setOffset;
+	const OutputGetter m_analogOutput[2];
 } MaxonMotor;
 
-MaxonMotorStatus maxonMotorBuilderDestroy(MaxonMotorBuilderPtr * t_maxon_builder)
+MaxonMotorBuilderStatus maxonMotorBuilderDestroy(MaxonMotorBuilderPtr * t_maxon_builder)
 {
 	if (t_maxon_builder == NULL) {
 		return MaxonMotorStatusOK;
@@ -39,9 +40,9 @@ MaxonMotorPtr maxonMotorCreate(MaxonMotorBuilderPtr t_maxon_builder)
 	MaxonMotorPtr ptr = calloc(1, sizeof(MaxonMotor));
 
 	if (ptr != NULL) {
-		maxonMotorBuilderCopySetup(t_maxon_builder, BuilderOptSetValue, &ptr->m_setValue);
-		maxonMotorBuilderCopySetup(t_maxon_builder, BuilderOptEnable, &ptr->m_enable);
-		maxonMotorBuilderCopySetup(t_maxon_builder, BuilderOptSetOffset, &ptr->m_setOffset);
+		maxonMotorBuilderCopySetup(t_maxon_builder, BuilderOptSetValue, (void*) &ptr->m_setValue);
+		maxonMotorBuilderCopySetup(t_maxon_builder, BuilderOptEnable, (void*) &ptr->m_enable);
+		maxonMotorBuilderCopySetup(t_maxon_builder, BuilderOptSetOffset, (void*) &ptr->m_setOffset);
 
 		// Since maxon motor controller doesn't reset when power on 
 		// (this is observed through controller monitor on ESCON),
@@ -78,7 +79,18 @@ MaxonMotorStatus maxonMotorSetOffset(MaxonMotorPtr t_maxon, float t_offset_cmd)
 
 float maxonMotorGetCurrentAvg(MaxonMotorPtr t_maxon)
 {
-	return 0.0f;
+	OutputGetter* analog_out_ptr = 0;
+
+	if (t_maxon->m_analogOutput[0].opt == GetOptionCurrentAvg) analog_out_ptr = t_maxon->m_analogOutput[0];
+	else if (t_maxon->m_analogOutput[1].opt == GetOptionCurrentAvg) analog_out_ptr = t_maxon->m_analogOutput[1];
+	else return 0.0F;
+
+	void* adc = analog_out_ptr->addr;
+
+	uint16_t analog_val = analog_out_ptr->getOuputFun(adc);
+	float current_avg = analog_val * analog_out_ptr->slope + analog_out_ptr->offset;
+
+	return current_avg;
 }
 
 MaxonMotorStatus maxonMotorReset(MaxonMotorPtr t_maxon)

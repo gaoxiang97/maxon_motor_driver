@@ -42,6 +42,8 @@ extern "C" {
 	 *	@brief	OutputGetter struct handles the analogOutputs functionality of maxon motor controller
 	 */
 	typedef struct OutputGetter {
+		GetOption opt;
+
 		void* addr;
 		GetOutputFuncPtr getOuputFun;
 

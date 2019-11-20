@@ -25,7 +25,7 @@ extern "C" {
 typedef struct MaxonMotorBuilder *MaxonMotorBuilderPtr;
 
 // function poiter define
-typedef float (*GetOutputFuncPtr)(void *);
+typedef uint16_t (*GetOutputFuncPtr)(void *);
 typedef void (*SetCmdFuncPtr)(void *, uint32_t);
 typedef void (*GpioFuncPtr)(void *, uint16_t);
 
@@ -68,16 +68,24 @@ typedef enum GetOption {
 
 typedef enum MaxonMotorBuilderStatus { MaxonMotorBuilderStatusOK } MaxonMotorBuilderStatus;
 
-// struct define
+/**
+ * @brief	Utility struct for packing the input output mapping information
+ */
 typedef struct ValueMap {
 	float key, val;
 } ValueMap;
 
+/**
+ * @brief	Utility struct for packing pin and port information
+ */
 typedef struct MaxonMotorGpio {
 	void *port;
 	uint32_t pin;
 } MaxonMotorGpio;
 
+/**
+ * @brief	EnableInitData consists of necessary information for "Enable" functionality of maxon motor controller
+ */
 typedef struct EnableInitData {
 	EnableOpt opt;
 	bool enableHighActive, additionalHighActive;
@@ -86,6 +94,10 @@ typedef struct EnableInitData {
 	GpioFuncPtr gpioSetFunc, gpioClearFunc;
 } EnableInitData;
 
+/**
+ * @brief	CmdSetterInitData consists of necessary information for "Set Value" and "Enable" functionality of
+ * 			maxon motor controller
+ */
 typedef struct CmdSetterInitData {
 	SetOption opt;
 
@@ -99,10 +111,16 @@ typedef struct CmdSetterInitData {
 	float fixValue[2];
 } CmdSetterInitData;
 
+/**
+ * @brief	OutputGetterInitData consists of necessary information for analog output functionality of
+ * 			maxon motor controller
+ */
 typedef struct OutputGetterInitData {
 	GetOption opt;
 
+	int channel;
 	ValueMap min, max;
+	float resolution;
 	void *addr;
 	GetOutputFuncPtr getOutputFunc;
 
@@ -144,7 +162,9 @@ MaxonMotorBuilderStatus maxonMotorBuilderDestroy(MaxonMotorBuilderPtr *t_maxon_b
 void maxonMotorBuilderGetListOfSet(MaxonMotorBuilderPtr t_builder, bool t_list[BuilderOptTotalOptNum]);
 
 /**
- * @brief
+ * @brief	This function returns the copy of the setup according to the builder option, the valid buffer type are
+ *			(@todo finish this part)
+ *
  * @param t_builder Maxon motor builder struct
  * @param t_opt     Builder option, see @ref MotorBuilderOpt
  * @param t_buffer  Destination to copy the setup to

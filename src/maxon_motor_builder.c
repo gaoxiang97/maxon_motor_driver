@@ -29,7 +29,7 @@ static inline MaxonMotorBuilderStatus m_maxonMotorBuilderEnable(MaxonMotorBuilde
 	switch (data->opt) {
 	case EnableOptEnable:
 		assert(data->enable.port);
-		assert(0 <= data->enable.pin && data->enable.pin <= 15U);
+		assert(0 <= data->enable.pin && data->enable.pin <= (1 << 15U));
 
 		enable_ptr->enableGpio = data->enable;
 		enable_ptr->enable = data->enableHighActive ? data->gpioSetFunc : data->gpioClearFunc;
@@ -109,6 +109,21 @@ static inline MaxonMotorBuilderStatus m_maxonMotorBuilderSetOffset(MaxonMotorBui
 }
 
 static inline MaxonMotorBuilderStatus m_maxonMotorBuilderAnalogOutput(MaxonMotorBuilderPtr t_builder, void* t_data) {
+	OutputGetterInitData* data = t_data;
+
+	assert(data->channel == 2 || data->channel == 1);
+	OutputGetter* analog_output_ptr = &t_builder->m_analogOutput[data->channel - 1];
+
+	switch(data->opt) {
+	case GetOptionCurrentAvg:
+		analog_output_ptr->addr = data->addr;
+		analog_output_ptr->getOuputFun = data->getOutputFunc;
+		analog_output_ptr->offset = (float)data->min.val;
+		analog_output_ptr->slope = data->resolution * (data->max.val - data->min.val) / (float)(data->max.key - data->min.key);
+		break;
+	default:
+		break;
+	}
 
 	return MaxonMotorBuilderStatusOK;
 }
